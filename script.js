@@ -23,7 +23,12 @@ class Calculator {
         this.currentOperand = this.currentOperand.toString() + number.toString()
     }
 
-    chooseOperation(operation) {
+chooseOperation(operation) {
+        if (this.currentOperand === '' && operation === '-') {
+            this.currentOperand = '-'
+            return
+        }
+
         if (this.currentOperand === '') return
         if (this.previousOperand !== '') {
             this.compute()
@@ -62,7 +67,7 @@ class Calculator {
                 break
             case 'sin':
                 const radians = current * (Math.PI / 180)
-                computation = Math.sin(radians)
+                computation = parseFloat(Math.sin(radians).toFixed(10))
                 break
             default:
                 return
@@ -157,7 +162,7 @@ numberButtons.forEach(button => {
 
 operationButtons.forEach(button => {
     button.addEventListener('click', () => {
-        const op = button.innerText
+        const op = button.dataset.operation || button.innerText 
         
         if (op === 'x²' || op === '√' || op === '!' || op === 'sin') {
             calculator.computeSingle(op)
