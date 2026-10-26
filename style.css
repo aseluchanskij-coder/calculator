@@ -94,3 +94,52 @@ body {
     color: white;
     font-size: 2.5rem;
 }
+
+@media (max-height: 750px) {
+    .calculator-grid {
+        grid-template-columns: repeat(4, 75px);
+        grid-template-rows: minmax(90px, auto) repeat(6, 60px);
+        gap: 2px;
+        padding: 8px;
+    }
+
+    .calculator-grid > button {
+        font-size: 1.5rem;
+    }
+
+    .output {
+        padding: 10px;
+    }
+
+    .output .previous-operand {
+        font-size: 1.1rem;
+    }
+
+    .output .current-operand {
+        font-size: 1.8rem;
+    }
+}
+@media (max-height: 600px) {
+    .calculator-grid {
+        grid-template-columns: repeat(4, 65px);
+        grid-template-rows: minmax(70px, auto) repeat(6, 48px);
+        gap: 2px;
+        padding: 5px;
+    }
+
+    .calculator-grid > button {
+        font-size: 1.2rem;
+    }
+
+    .output {
+        padding: 8px;
+    }
+
+    .output .previous-operand {
+        font-size: 0.9rem;
+    }
+
+    .output .current-operand {
+        font-size: 1.5rem;
+    }
+}
