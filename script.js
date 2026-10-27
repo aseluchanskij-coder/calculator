@@ -7,40 +7,61 @@ class Calculator {
 
     clear() {
         this.currentOperand = ''
-        this.previousOperand = ''
-        this.operation = undefined
+        this.expression = [] //masyv
+        this.readyToReset = false 
     }
 
     delete() {
-        if (typeof this.currentOperand === 'number') {
-            this.currentOperand = this.currentOperand.toString()
+        if (this.currentOperand === 'Klaida' || this.currentOperand === 'Dalyba iš nulio') {
+            this.clear()
+            return
         }
-        this.currentOperand = this.currentOperand.slice(0, -1)
+        if (this.readyToReset) {
+            this.currentOperand = ''
+            this.readyToReset = false
+            return
+        }
+        if (this.currentOperand !== '') {
+            this.currentOperand = this.currentOperand.toString().slice(0, -1)
+        } else if (this.expression.length > 0) {
+            this.expression.pop() 
+            this.currentOperand = this.expression.pop() || '' 
+        }
     }
 
     appendNumber(number) {
         if (number === '.' && this.currentOperand.includes('.')) return
+        
+        if (this.readyToReset) {
+            this.currentOperand = number.toString()
+            this.readyToReset = false
+            return
+        }
         this.currentOperand = this.currentOperand.toString() + number.toString()
     }
 
-chooseOperation(operation) {
+    chooseOperation(operation) {
         if (this.currentOperand === '' && operation === '-') {
             this.currentOperand = '-'
             return
         }
-
-        if (this.currentOperand === '') return
-        if (this.previousOperand !== '') {
-            this.compute()
+        
+        if (this.currentOperand === '' && this.expression.length > 0) {
+            this.expression[this.expression.length - 1] = operation
+            return
         }
-        this.operation = operation
-        this.previousOperand = this.currentOperand
+        
+        if (this.currentOperand === '' || this.currentOperand === '-') return
+
+        this.expression.push(this.currentOperand)
+        this.expression.push(operation)
         this.currentOperand = ''
+        this.readyToReset = false
     }
 
     computeSingle(operation) {
-        if (this.currentOperand === '') return
-        const current = parseFloat(this.currentOperand)
+        if (this.currentOperand === '' || this.currentOperand === '-') return
+        let current = parseFloat(this.currentOperand)
         if (isNaN(current)) return
         let computation
 
@@ -50,14 +71,14 @@ chooseOperation(operation) {
                 break
             case '√':
                 if (current < 0) {
-                    this.currentOperand = 'Math ERROR'
+                    this.currentOperand = 'Klaida'
                     return
                 }
                 computation = Math.sqrt(current)
                 break
             case '!':
                 if (current < 0 || !Number.isInteger(current)) {
-                    this.currentOperand = 'Math ERROR' 
+                    this.currentOperand = 'Klaida' 
                     return
                 }
                 computation = 1
@@ -72,48 +93,50 @@ chooseOperation(operation) {
             default:
                 return
         }
-        this.currentOperand = computation
-        this.operation = undefined
-        this.previousOperand = ''
+        this.currentOperand = computation.toString()
+        this.readyToReset = true
     }
 
     compute() {
-        let computation
-        const prev = parseFloat(this.previousOperand)
-        const current = parseFloat(this.currentOperand)
-        if (isNaN(prev) || isNaN(current)) return
-
-        switch (this.operation) {
-            case '+':
-                computation = prev + current
-                break
-            case '-':
-                computation = prev - current
-                break
-            case '*':
-                computation = prev * current
-                break
-            case '÷':
-                if (current === 0) {
-                    this.currentOperand = 'Math ERROR'
-                    this.operation = undefined
-                    this.previousOperand = ''
-                    return
-                }
-                computation = prev / current
-                break
-            case '^':
-                computation = Math.pow(prev, current)
-                break
-            default:
-                return
+        if (this.currentOperand === '' && this.expression.length === 0) return
+        
+        let finalExpression = [...this.expression]
+        
+        if (this.currentOperand !== '' && this.currentOperand !== '-') {
+            finalExpression.push(this.currentOperand)
+        } else if (finalExpression.length > 0 && ['+', '-', '*', '÷', '^'].includes(finalExpression[finalExpression.length - 1])) {
+            finalExpression.pop()
         }
-        this.currentOperand = computation
-        this.operation = undefined
-        this.previousOperand = ''
+
+        if (finalExpression.length === 0) return
+
+        let evalString = finalExpression.join(' ')
+            .replace(/÷/g, '/')
+            .replace(/\^/g, '**')
+
+        try {
+            let result = new Function('return ' + evalString)()
+            
+            if (isNaN(result)) {
+                this.currentOperand = 'Klaida'
+            } else if (!isFinite(result)) {
+                this.currentOperand = 'Dalyba iš nulio'
+            } else {
+                result = Math.round(result * 10000000000) / 10000000000
+                this.currentOperand = result.toString()
+            }
+        } catch (error) {
+            this.currentOperand = 'Klaida'
+        }
+
+        this.expression = []
+        this.readyToReset = true
     }
+
     getDisplayNumber(number) {
-        if (typeof number === 'string') return number 
+        if (number === 'Klaida' || number === 'Dalyba iš nulio') return number
+        if (number === '-') return '-'
+        if (number === '') return ''
         
         const stringNumber = number.toString()
         const integerDigits = parseFloat(stringNumber.split('.')[0])
@@ -134,9 +157,13 @@ chooseOperation(operation) {
     updateDisplay() {
         this.currentOperandTextElement.innerText = this.getDisplayNumber(this.currentOperand)
         
-        if (this.operation != null && this.operation !== 'x²' && this.operation !== '√' && this.operation !== '!' && this.operation !== 'sin') {
-            this.previousOperandTextElement.innerText =
-                `${this.getDisplayNumber(this.previousOperand)} ${this.operation}`
+        if (this.expression.length > 0) {
+            this.previousOperandTextElement.innerText = this.expression.map(token => {
+                if (['+', '-', '*', '÷', '^'].includes(token)) {
+                    return token
+                }
+                return this.getDisplayNumber(token)
+            }).join(' ')
         } else {
             this.previousOperandTextElement.innerText = ''
         }
